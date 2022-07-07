@@ -1,0 +1,64 @@
+import pandas as pd
+
+ad_clicks = pd.read_csv('ad_clicks.csv')
+
+#print(ad_clicks.head())
+
+print(ad_clicks.groupby('utm_source')['user_id'].count().reset_index().rename(columns = {'user_id':'visits'}))
+
+ad_clicks['is_click'] = ad_clicks['ad_click_timestamp'].apply(lambda x: True if type(x) == str else False)
+
+print(ad_clicks)
+
+clicks_by_source = ad_clicks.groupby(['utm_source','is_click'])['user_id'].count().reset_index()
+
+#print(clicks_by_source)
+
+
+clicks_pivot = clicks_by_source.pivot(
+  columns = 'is_click',
+  index = 'utm_source',
+  values = 'user_id'
+)
+
+clicks_pivot = clicks_pivot.reset_index()
+#print(clicks_pivot)
+
+clicks_pivot['percent_clicked'] = clicks_pivot[True]/(clicks_pivot[True] +  clicks_pivot[False])
+
+#print(clicks_pivot)
+
+exper = ad_clicks.groupby('experimental_group')['user_id'].count().reset_index().rename(columns = {'user_id':'number of people seen','experimental_group':'ad'})
+
+#print(exper)
+
+percentge = ad_clicks.groupby(['experimental_group','is_click'])['user_id'].count().reset_index().rename(columns = {'user_id': 'number of people'})
+
+percentge_pivot =percentge.pivot(columns ='is_click',index = 'experimental_group',values = 'number of people').reset_index()
+
+print(percentge_pivot)
+
+a_clicks = ad_clicks[ad_clicks.experimental_group == 'A']
+b_clicks = ad_clicks[ad_clicks.experimental_group == 'B']
+
+print(a_clicks.head(6))
+print(b_clicks.head(6))
+
+A = a_clicks.groupby(['is_click','day'])['user_id'].count().reset_index()
+B = b_clicks.groupby(['is_click','day'])['user_id'].count().reset_index()
+
+A_pivot = A.pivot(columns = 'is_click', index = 'day', values = 'user_id').reset_index()
+B_pivot = B.pivot(columns = 'is_click', index = 'day', values = 'user_id').reset_index()
+
+#print(type(A_pivot))
+print(A_pivot)
+print(B_pivot)
+A_lambda = lambda row: row[True] / (row[True]+row[False])
+B_lambda = lambda row: row['True'] / (row['True']+row['False'])
+
+A_pivot['A_percentage'] = A_pivot.apply(A_lambda, axis=1)
+
+B_pivot['B_percentage'] = B_pivot.apply(B_lambda, axis=1)
+
+print(A_pivot)
+print(B_pivot)
